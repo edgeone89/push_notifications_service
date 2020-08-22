@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package pushnotificationsservice;
+
+option java_multiple_files = true;
+option java_package = "com.hab.grpc.pushnotificationsservice";
+option java_outer_classname = "PushNotificationServiceGRPC";
+
+message SubscribePushNotificationRequest{
+	string user_id=1;
+}
+
+message SubscribePushNotificationResponce{
+	string from_user_id = 1;
+	string message = 2;
+}
+
+message PushNotificationRequest{
+	string user_id=1;
+	string message = 2;
+	string to_user_id = 3;
+}
+message PushNotificationResponce{
+	int32 response_code = 1;
+}
+
+service PushNotifications{
+	rpc SubscribeToPushNotifications(SubscribePushNotificationRequest) returns(stream SubscribePushNotificationResponce){}
+	rpc SendPushNotification(PushNotificationRequest) returns(PushNotificationResponce){}
+}
