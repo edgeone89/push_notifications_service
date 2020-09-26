@@ -25,6 +25,13 @@ pub struct PushNotificationResponce {
     #[prost(int32, tag = "1")]
     pub response_code: i32,
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UnSubscribePushNotificationRequest {
+    #[prost(string, tag = "1")]
+    pub user_id: std::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UnSubscribePushNotificationResponce {}
 #[doc = r" Generated client implementations."]
 pub mod push_notifications_client {
     #![allow(unused_variables, dead_code, missing_docs)]
@@ -131,6 +138,10 @@ pub mod push_notifications_server {
             &mut self,
             request: tonic::Request<super::PushNotificationRequest>,
         ) -> Result<tonic::Response<super::PushNotificationResponce>, tonic::Status>;
+        async fn un_subscribe_push_notification(
+            &mut self,
+            request: tonic::Request<super::UnSubscribePushNotificationRequest>,
+        ) -> Result<tonic::Response<super::UnSubscribePushNotificationResponce>, tonic::Status>;
     }
     #[derive(Debug)]
     #[doc(hidden)]
@@ -232,6 +243,44 @@ pub mod push_notifications_server {
                         let interceptor = inner.1.clone();
                         let inner = inner.0;
                         let method = SendPushNotificationSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = if let Some(interceptor) = interceptor {
+                            tonic::server::Grpc::with_interceptor(codec, interceptor)
+                        } else {
+                            tonic::server::Grpc::new(codec)
+                        };
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/pushnotificationsservice.PushNotifications/UnSubscribePushNotification" => {
+                    #[allow(non_camel_case_types)]
+                    struct UnSubscribePushNotificationSvc<T: PushNotifications>(pub Arc<Mutex<T>>);
+                    impl<T: PushNotifications>
+                        tonic::server::UnaryService<super::UnSubscribePushNotificationRequest>
+                        for UnSubscribePushNotificationSvc<T>
+                    {
+                        type Response = super::UnSubscribePushNotificationResponce;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::UnSubscribePushNotificationRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut =
+                                async move { 
+                                    let mut tmp_inner = inner.lock().await;
+                                    tmp_inner.un_subscribe_push_notification(request).await
+                                };
+                            Box::pin(fut)
+                        }
+                    }
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let interceptor = inner.1.clone();
+                        let inner = inner.0;
+                        let method = UnSubscribePushNotificationSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = if let Some(interceptor) = interceptor {
                             tonic::server::Grpc::with_interceptor(codec, interceptor)

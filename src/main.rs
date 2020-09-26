@@ -10,8 +10,11 @@ use std::collections::VecDeque;
 mod pushnotificationsservice;
 use pushnotificationsservice::push_notifications_server::{PushNotifications, PushNotificationsServer};
 use pushnotificationsservice::{SubscribePushNotificationRequest, SubscribePushNotificationResponce, 
-    PushNotificationRequest, PushNotificationResponce
+    PushNotificationRequest, PushNotificationResponce, UnSubscribePushNotificationRequest,
+    UnSubscribePushNotificationResponce
 };
+
+const PUSH_NOTIFICATION_SERVER_ADDRESS: &str = "192.168.0.100:50052";
 
 struct MsgFromUser{
     from_user_id: String,
@@ -107,11 +110,23 @@ println!("new subscriber");
         };
         return Ok(Response::new(push_notification_responce));
     }
+
+    async fn un_subscribe_push_notification(
+        &mut self,
+        request: Request<UnSubscribePushNotificationRequest>,
+    ) -> Result<Response<UnSubscribePushNotificationResponce>, Status>{
+        println!("unsubscribed");
+        let user_id_from_request = request.get_ref().user_id.clone();
+        self.subscribed_peers.remove(&user_id_from_request);
+        let response = UnSubscribePushNotificationResponce{
+        };
+        return Ok(Response::new(response));
+    }
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let addr = "192.168.0.100:50052".parse()?;
+    let addr = PUSH_NOTIFICATION_SERVER_ADDRESS.parse()?;
     let pushnotificationsservice = HabPushNotification::default();
 
     println!("ChatServer listening on {}", addr);
