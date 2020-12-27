@@ -4,6 +4,7 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::mpsc::Receiver;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::time::Duration;
@@ -47,13 +48,19 @@ impl<T> Deref for DropReceiver<T> {
 impl<T> Drop for DropReceiver<T> {
     fn drop(&mut self) {
         println!("REcEiVER has BEEN DROPPED");
-        self.push_notification_service.lock().unwrap().subscribed_peers.remove(&self.user_id);
+        use futures::executor;
+        let user_id = self.user_id.clone();
+        let push_notification_service = self.push_notification_service.lock().unwrap();
+        executor::block_on(async{
+            let subscribed_peers = &mut(*(push_notification_service.subscribed_peers.write().await));
+            subscribed_peers.remove(&user_id);
+        });
     }
 }
 
 #[derive(Default)]
 pub struct HabPushNotification {
-    subscribed_peers: HashMap<String, Sender<Result<SubscribePushNotificationResponce, Status>>>,
+    subscribed_peers: Arc<RwLock<HashMap<String, Sender<Result<SubscribePushNotificationResponce, Status>>>>>,
     pending_messages: Arc<Mutex<HashMap<String, VecDeque<MsgFromUser>>>>
 }
 
@@ -75,7 +82,10 @@ impl PushNotifications for HabPushNotification{
         println!("new subscriber");
         let user_id_from_request = request.get_ref().user_id.clone();
         let (tx, rx) = mpsc::channel(1000);
-        self.subscribed_peers.entry(user_id_from_request.clone()).or_insert(tx.clone());
+        {
+            let subscribed_peers = &mut(*(self.subscribed_peers.write().await));
+            subscribed_peers.entry(user_id_from_request.clone()).or_insert(tx.clone());
+        }
 
         if self.pending_messages.lock().await.contains_key(&user_id_from_request) == true {
             let mut messages_awaited = self.pending_messages.lock().await;
@@ -114,12 +124,13 @@ impl PushNotifications for HabPushNotification{
         let to_user_id_from_request = request.get_ref().to_user_id.clone();
         let message_from_request = request.get_ref().message.clone();
 
-        if self.subscribed_peers.contains_key(&to_user_id_from_request) == true {
+        let subscribed_peers = &(*(self.subscribed_peers.read().await));
+        if subscribed_peers.contains_key(&to_user_id_from_request) == true {
             let reply = SubscribePushNotificationResponce {
                 from_user_id: from_user_id_from_request.clone(),
                 message: message_from_request.clone()
             };
-            let tx_tmp_option = self.subscribed_peers.get(&to_user_id_from_request);
+            let tx_tmp_option = subscribed_peers.get(&to_user_id_from_request);
             if let Some(tx_tmp_ref) = tx_tmp_option {
                 let mut tx_tmp = tx_tmp_ref.clone();
                 tokio::spawn(async move {
@@ -180,7 +191,10 @@ impl PushNotifications for HabPushNotification{
     ) -> Result<Response<UnSubscribePushNotificationResponce>, Status>{
         println!("unsubscribed");
         let user_id_from_request = request.get_ref().user_id.clone();
-        self.subscribed_peers.remove(&user_id_from_request);
+        {
+            let subscribed_peers = &mut(*(self.subscribed_peers.write().await));
+            subscribed_peers.remove(&user_id_from_request);
+        }
         let response = UnSubscribePushNotificationResponce{
         };
         return Ok(Response::new(response));
