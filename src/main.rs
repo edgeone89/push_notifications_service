@@ -2,16 +2,17 @@ use tonic::{transport::Server, Request, Response, Status};
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::mpsc::Receiver;
+use futures_core::stream::Stream;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::sync::RwLock;
 use std::collections::HashMap;
 use std::collections::VecDeque;
-use std::time::Duration;
+//use std::time::Duration;
 use std::pin::Pin;
 use std::task::Poll;
 use std::task::Context;
-use std::ops::Deref;
+//use std::ops::Deref;
 
 mod pushnotificationsservice;
 use pushnotificationsservice::push_notifications_server::{PushNotifications, PushNotificationsServer};
@@ -20,41 +21,43 @@ use pushnotificationsservice::{SubscribePushNotificationRequest, SubscribePushNo
     UnSubscribePushNotificationResponce
 };
 
-const PUSH_NOTIFICATION_SERVER_ADDRESS: &str = "192.168.0.100:50052";
+const PUSH_NOTIFICATION_SERVER_ADDRESS: &str = "192.168.0.100:50052";//"194.87.99.104:50052"
 
 struct MsgFromUser{
     from_user_id: String,
     msg: String
 }
 pub struct DropReceiver<T> {
-    rx: Receiver<T>,
+    inner_rx: Receiver<T>,
     user_id: String,
     push_notification_service: Arc<std::sync::Mutex<&'static mut HabPushNotification>>
 }
-impl<T> tokio::stream::Stream for DropReceiver<T> {
+impl<T> Stream for DropReceiver<T> {
     type Item = T;
     
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        Pin::new(&mut self.rx).poll_next(cx)
+        return Pin::new(&mut self.inner_rx).poll_recv(cx);
     }
 }
-impl<T> Deref for DropReceiver<T> {
+/*impl<T> Deref for DropReceiver<T> {
     type Target = Receiver<T>;
 
     fn deref(&self) -> &Self::Target {
-        &self.rx
+        &self.inner_rx
     }
-}
+}*/
 impl<T> Drop for DropReceiver<T> {
     fn drop(&mut self) {
-        println!("REcEiVER has BEEN DROPPED");
-        use futures::executor;
+        println!("REcEiVER {} has BEEN DROPPED", &self.user_id);
         let user_id = self.user_id.clone();
-        let push_notification_service = self.push_notification_service.lock().unwrap();
-        executor::block_on(async{
-            let subscribed_peers = &mut(*(push_notification_service.subscribed_peers.write().await));
-            subscribed_peers.remove(&user_id);
-        });
+        if let Ok(push_notification_service) = self.push_notification_service.lock() {
+            //use futures::executor;
+            use futures_executor::block_on;
+            block_on(async{
+                let subscribed_peers = &mut(*(push_notification_service.subscribed_peers.write().await));
+                subscribed_peers.remove(&user_id);
+            });
+        }
     }
 }
 
@@ -64,9 +67,9 @@ pub struct HabPushNotification {
     pending_messages: Arc<Mutex<HashMap<String, VecDeque<MsgFromUser>>>>
 }
 
-fn extend_lifetime<'short_lifetime>(r: &'short_lifetime mut HabPushNotification) -> &'static mut HabPushNotification {
+fn extend_lifetime<'short_lifetime>(ref_hab_push: &'short_lifetime mut HabPushNotification) -> &'static mut HabPushNotification {
     return unsafe {
-        std::mem::transmute::<&'short_lifetime mut HabPushNotification, &'static mut HabPushNotification>(r)
+        std::mem::transmute::<&'short_lifetime mut HabPushNotification, &'static mut HabPushNotification>(ref_hab_push)
     };
 }
 
@@ -74,14 +77,15 @@ fn extend_lifetime<'short_lifetime>(r: &'short_lifetime mut HabPushNotification)
 impl PushNotifications for HabPushNotification{
     //type SubscribeToPushNotificationsStream=mpsc::Receiver<Result<SubscribePushNotificationResponce,Status>>;
     //#![feature(generic_associated_types)]
-    type SubscribeToPushNotificationsStream=DropReceiver<Result<SubscribePushNotificationResponce,Status>>;
+    type SubscribeToPushNotificationsStream = DropReceiver<Result<SubscribePushNotificationResponce,Status>>;
     async fn subscribe_to_push_notifications(
         &mut self,
         request: Request<SubscribePushNotificationRequest>,
     ) -> Result<Response<Self::SubscribeToPushNotificationsStream>, Status>{
-        println!("new subscriber");
         let user_id_from_request = request.get_ref().user_id.clone();
+        println!("new subscriber, id: {}", &user_id_from_request);
         let (tx, rx) = mpsc::channel(1000);
+        
         {
             let subscribed_peers = &mut(*(self.subscribed_peers.write().await));
             subscribed_peers.entry(user_id_from_request.clone()).or_insert(tx.clone());
@@ -98,9 +102,12 @@ impl PushNotifications for HabPushNotification{
                             from_user_id: msg.from_user_id,
                             message: msg.msg
                         };
-                        let mut tx_tmp = tx.clone();
+                        let tx_tmp = tx.clone();
                         tokio::spawn(async move {
-                            tx_tmp.send(Ok(reply)).await;
+                            let res = tx_tmp.send(Ok(reply)).await;
+                            if let Err(e) = res {
+                                println!("error while sending queued messages: {}", e);
+                            }
                         });
                     }
                 }
@@ -108,7 +115,7 @@ impl PushNotifications for HabPushNotification{
         }
 
         let drop_receiver = DropReceiver {
-            rx: rx,
+            inner_rx: rx,
             user_id: user_id_from_request.clone(),
             push_notification_service: Arc::new(std::sync::Mutex::new(extend_lifetime(self)))
         };
@@ -132,9 +139,12 @@ impl PushNotifications for HabPushNotification{
             };
             let tx_tmp_option = subscribed_peers.get(&to_user_id_from_request);
             if let Some(tx_tmp_ref) = tx_tmp_option {
-                let mut tx_tmp = tx_tmp_ref.clone();
+                let tx_tmp = tx_tmp_ref.clone();
                 tokio::spawn(async move {
-                    tx_tmp.send(Ok(reply)).await;
+                    let res = tx_tmp.send(Ok(reply)).await;
+                    if let Err(e) = res {
+                        println!("error while send_push_notification: {}", e);
+                    }
                 });
             } else {
                 if self.pending_messages.lock().await.contains_key(&to_user_id_from_request) == true {
@@ -206,14 +216,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = PUSH_NOTIFICATION_SERVER_ADDRESS.parse()?;
     let push_notification_service = HabPushNotification::default();
 
-    println!("ChatServer listening on {}", addr);
+    println!("PushNotificationsServer listening on {}", addr);
 
     Server::builder()
-        .tcp_keepalive(Some(Duration::new(5, 0)))
-        .timeout(Duration::new(15, 0))
         .add_service(PushNotificationsServer::new(push_notification_service))
         .serve(addr)
         .await?;
 
-    Ok(())
+    return Ok(());
 }

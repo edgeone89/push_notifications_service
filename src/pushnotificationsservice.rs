@@ -1,24 +1,23 @@
-
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SubscribePushNotificationRequest {
     #[prost(string, tag = "1")]
-    pub user_id: std::string::String,
+    pub user_id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SubscribePushNotificationResponce {
     #[prost(string, tag = "1")]
-    pub from_user_id: std::string::String,
+    pub from_user_id: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
-    pub message: std::string::String,
+    pub message: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PushNotificationRequest {
     #[prost(string, tag = "1")]
-    pub user_id: std::string::String,
+    pub user_id: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
-    pub message: std::string::String,
+    pub message: ::prost::alloc::string::String,
     #[prost(string, tag = "3")]
-    pub to_user_id: std::string::String,
+    pub to_user_id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PushNotificationResponce {
@@ -28,7 +27,7 @@ pub struct PushNotificationResponce {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UnSubscribePushNotificationRequest {
     #[prost(string, tag = "1")]
-    pub user_id: std::string::String,
+    pub user_id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UnSubscribePushNotificationResponce {}
@@ -102,6 +101,23 @@ pub mod push_notifications_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        pub async fn un_subscribe_push_notification(
+            &mut self,
+            request: impl tonic::IntoRequest<super::UnSubscribePushNotificationRequest>,
+        ) -> Result<tonic::Response<super::UnSubscribePushNotificationResponce>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/pushnotificationsservice.PushNotifications/UnSubscribePushNotification",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
     }
     impl<T: Clone> Clone for PushNotificationsClient<T> {
         fn clone(&self) -> Self {
@@ -116,7 +132,6 @@ pub mod push_notifications_client {
         }
     }
 }
-
 #[doc = r" Generated server implementations."]
 pub mod push_notifications_server {
     #![allow(unused_variables, dead_code, missing_docs)]
@@ -144,7 +159,6 @@ pub mod push_notifications_server {
         ) -> Result<tonic::Response<super::UnSubscribePushNotificationResponce>, tonic::Status>;
     }
     #[derive(Debug)]
-    #[doc(hidden)]
     pub struct PushNotificationsServer<T: PushNotifications> {
         inner: _Inner<T>,
     }
@@ -193,11 +207,10 @@ pub mod push_notifications_server {
                             request: tonic::Request<super::SubscribePushNotificationRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut =
-                                async move { 
-                                    let mut tmp_inner = inner.lock().await;
-                                    tmp_inner.subscribe_to_push_notifications(request).await
-                                };
+                            let fut = async move {
+                                let mut tmp_inner = inner.lock().await;
+                                tmp_inner.subscribe_to_push_notifications(request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -232,9 +245,10 @@ pub mod push_notifications_server {
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move { 
+                                //(*inner).send_push_notification(request).await
                                 let mut tmp_inner = inner.lock().await;
                                 tmp_inner.send_push_notification(request).await
-                             };
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -268,11 +282,11 @@ pub mod push_notifications_server {
                             request: tonic::Request<super::UnSubscribePushNotificationRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut =
-                                async move { 
-                                    let mut tmp_inner = inner.lock().await;
-                                    tmp_inner.un_subscribe_push_notification(request).await
-                                };
+                            let fut = async move {
+                                //(*inner).un_subscribe_push_notification(request).await
+                                let mut tmp_inner = inner.lock().await;
+                                tmp_inner.un_subscribe_push_notification(request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -296,6 +310,7 @@ pub mod push_notifications_server {
                     Ok(http::Response::builder()
                         .status(200)
                         .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
                         .body(tonic::body::BoxBody::empty())
                         .unwrap())
                 }),
