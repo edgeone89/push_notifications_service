@@ -25,7 +25,8 @@ const PUSH_NOTIFICATION_SERVER_ADDRESS: &str = "192.168.0.100:50052";//"194.87.9
 
 struct MsgFromUser{
     from_user_id: String,
-    msg: String
+    msg: String,
+    from_user_name: String
 }
 pub struct DropReceiver<T> {
     inner_rx: Receiver<T>,
@@ -100,7 +101,8 @@ impl PushNotifications for HabPushNotification{
                     if let Some(msg) = message {
                         let reply = SubscribePushNotificationResponce {
                             from_user_id: msg.from_user_id,
-                            message: msg.msg
+                            message: msg.msg,
+                            from_user_name: msg.from_user_name
                         };
                         let tx_tmp = tx.clone();
                         tokio::spawn(async move {
@@ -130,12 +132,14 @@ impl PushNotifications for HabPushNotification{
         let from_user_id_from_request = request.get_ref().user_id.clone();
         let to_user_id_from_request = request.get_ref().to_user_id.clone();
         let message_from_request = request.get_ref().message.clone();
+        let from_user_name_from_request = request.get_ref().from_user_name.clone();
 
         let subscribed_peers = &(*(self.subscribed_peers.read().await));
         if subscribed_peers.contains_key(&to_user_id_from_request) == true {
             let reply = SubscribePushNotificationResponce {
                 from_user_id: from_user_id_from_request.clone(),
-                message: message_from_request.clone()
+                message: message_from_request.clone(),
+                from_user_name: from_user_name_from_request.clone()
             };
             let tx_tmp_option = subscribed_peers.get(&to_user_id_from_request);
             if let Some(tx_tmp_ref) = tx_tmp_option {
@@ -153,7 +157,8 @@ impl PushNotifications for HabPushNotification{
                     if let Some(msgs) = messages {
                         let msg_from_user = MsgFromUser{
                             from_user_id: from_user_id_from_request.clone(),
-                            msg: message_from_request
+                            msg: message_from_request,
+                            from_user_name: from_user_name_from_request.clone()
                         };
                         msgs.push_back(msg_from_user);// fixme: insertion order is not kept
                     }
@@ -161,7 +166,8 @@ impl PushNotifications for HabPushNotification{
                     let mut messages:VecDeque<MsgFromUser> = VecDeque::new();
                     let msg_from_user = MsgFromUser{
                         from_user_id: from_user_id_from_request,
-                        msg: message_from_request
+                        msg: message_from_request,
+                        from_user_name: from_user_name_from_request.clone()
                     };
                     messages.push_back(msg_from_user);
                     self.pending_messages.lock().await.insert(to_user_id_from_request, messages);
@@ -174,7 +180,8 @@ impl PushNotifications for HabPushNotification{
                 if let Some(msgs) = messages {
                     let msg_from_user = MsgFromUser{
                         from_user_id: from_user_id_from_request,
-                        msg: message_from_request
+                        msg: message_from_request,
+                        from_user_name: from_user_name_from_request.clone()
                     };
                     msgs.push_back(msg_from_user);// fixme: insertion order is not kept
                 }
@@ -182,7 +189,8 @@ impl PushNotifications for HabPushNotification{
                 let mut messages:VecDeque<MsgFromUser> = VecDeque::new();
                 let msg_from_user = MsgFromUser{
                     from_user_id: from_user_id_from_request,
-                    msg: message_from_request
+                    msg: message_from_request,
+                    from_user_name: from_user_name_from_request.clone()
                 };
                 messages.push_back(msg_from_user);
                 self.pending_messages.lock().await.insert(to_user_id_from_request, messages);

@@ -13,12 +13,14 @@ message SubscribePushNotificationRequest{
 message SubscribePushNotificationResponce{
 	string from_user_id = 1;
 	string message = 2;
+	string from_user_name = 3;
 }
 
 message PushNotificationRequest{
 	string user_id=1;
 	string message = 2;
 	string to_user_id = 3;
+	string from_user_name = 4;
 }
 message PushNotificationResponce{
 	int32 response_code = 1;
