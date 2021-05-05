@@ -9,21 +9,21 @@ edition = "2018"
 
 [dependencies]
 #tonic = { version = "0.3.1", features = ["tls"] }
-tonic = { version = "0.4.0", features = ["tls"] }
+tonic = { version = "0.4.3", features = ["tls"] }
 prost = "0.7"
 
 
 #===== for tokio v1.0 =====================================
-tokio = { version = "1.4.0", features = ["rt-multi-thread", "time", "fs", "macros", "net", "sync"] }
+tokio = { version = "1.5.0", features = ["rt-multi-thread", "time", "fs", "macros", "net", "sync"] }
 #tokio-stream = "0.1.4"
 #==========================================================
 
 #futures = "0.3.12"
-futures-core = "0.3.13"
-futures-executor = "0.3.13"
+futures-core = "0.3.14"
+futures-executor = "0.3.14"
 
 [build-dependencies]
-tonic-build = "0.4.0"
+tonic-build = "0.4.2"
 
 [profile.release]
 opt-level = 'z'

@@ -141,6 +141,7 @@ pub mod push_notifications_server {
     #![allow(unused_variables, dead_code, missing_docs)]
     use tonic::codegen::*;
     use tokio::sync::Mutex;
+    use futures_core::Stream;
     #[doc = "Generated trait containing gRPC methods that should be implemented for use with PushNotificationsServer."]
     #[async_trait]
     pub trait PushNotifications: Send + Sync + 'static {
