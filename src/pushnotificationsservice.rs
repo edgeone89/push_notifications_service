@@ -154,8 +154,8 @@ pub mod push_notifications_client {
 #[doc = r" Generated server implementations."]
 pub mod push_notifications_server {
     #![allow(unused_variables, dead_code, missing_docs)]
-    use tonic::codegen::*;
     use tokio::sync::Mutex;
+    use tonic::codegen::*;
     #[doc = "Generated trait containing gRPC methods that should be implemented for use with PushNotificationsServer."]
     #[async_trait]
     pub trait PushNotifications: Send + Sync + 'static {
@@ -271,7 +271,7 @@ pub mod push_notifications_server {
                             request: tonic::Request<super::PushNotificationRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move { 
+                            let fut = async move {
                                 //(*inner).send_push_notification(request).await
                                 let mut tmp_inner = inner.lock().await;
                                 tmp_inner.send_push_notification(request).await

@@ -1,41 +1,44 @@
-use tonic::{transport::Server, Request, Response, Status};
-use tokio::sync::mpsc;
-use tokio::sync::mpsc::Sender;
-use tokio::sync::mpsc::Receiver;
 use futures_core::stream::Stream;
-use std::sync::Arc;
-use tokio::sync::Mutex;
-use tokio::sync::RwLock;
 use std::collections::HashMap;
 use std::collections::VecDeque;
+use std::sync::Arc;
+use tokio::sync::mpsc;
+use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::Sender;
+use tokio::sync::Mutex;
+use tokio::sync::RwLock;
+use tonic::{transport::Server, Request, Response, Status};
 //use std::time::Duration;
 use std::pin::Pin;
-use std::task::Poll;
 use std::task::Context;
+use std::task::Poll;
 //use std::ops::Deref;
 
 mod pushnotificationsservice;
-use pushnotificationsservice::push_notifications_server::{PushNotifications, PushNotificationsServer};
-use pushnotificationsservice::{SubscribePushNotificationRequest, SubscribePushNotificationResponce, 
-    PushNotificationRequest, PushNotificationResponce, UnSubscribePushNotificationRequest,
-    UnSubscribePushNotificationResponce
+use pushnotificationsservice::push_notifications_server::{
+    PushNotifications, PushNotificationsServer,
+};
+use pushnotificationsservice::{
+    PushNotificationRequest, PushNotificationResponce, SubscribePushNotificationRequest,
+    SubscribePushNotificationResponce, UnSubscribePushNotificationRequest,
+    UnSubscribePushNotificationResponce,
 };
 
-const PUSH_NOTIFICATION_SERVER_ADDRESS: &str = "192.168.0.100:50052";//"194.87.99.104:50052"
+const PUSH_NOTIFICATION_SERVER_ADDRESS: &str = "192.168.0.100:50052";
 
-struct MsgFromUser{
+struct MsgFromUser {
     from_user_id: String,
     msg: String,
     from_user_name: String
 }
-pub struct DropReceiver<T> {
+pub struct DropReceiver<'a, T> {
     inner_rx: Receiver<T>,
     user_id: String,
-    push_notification_service: Arc<std::sync::Mutex<&'static mut HabPushNotification>>
+    push_notification_service: Arc<std::sync::Mutex<&'a mut HabPushNotification>>
 }
-impl<T> Stream for DropReceiver<T> {
+impl<'a, T> Stream for DropReceiver<'a, T> {
     type Item = T;
-    
+
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         return Pin::new(&mut self.inner_rx).poll_recv(cx);
     }
@@ -47,15 +50,15 @@ impl<T> Stream for DropReceiver<T> {
         &self.inner_rx
     }
 }*/
-impl<T> Drop for DropReceiver<T> {
+impl<'a, T> Drop for DropReceiver<'a, T> {
     fn drop(&mut self) {
         println!("REcEiVER {} has BEEN DROPPED", &self.user_id);
         let user_id = self.user_id.clone();
         if let Ok(push_notification_service) = self.push_notification_service.lock() {
             //use futures::executor;
             use futures_executor::block_on;
-            block_on(async{
-                let subscribed_peers = &mut(*(push_notification_service.subscribed_peers.write().await));
+            block_on(async {
+                let subscribed_peers = &mut (*(push_notification_service.subscribed_peers.write().await));
                 subscribed_peers.remove(&user_id);
             });
         }
@@ -75,24 +78,28 @@ fn extend_lifetime<'short_lifetime>(ref_hab_push: &'short_lifetime mut HabPushNo
 }
 
 #[tonic::async_trait]
-impl PushNotifications for HabPushNotification{
+impl PushNotifications for HabPushNotification {
     //type SubscribeToPushNotificationsStream=mpsc::Receiver<Result<SubscribePushNotificationResponce,Status>>;
-    //#![feature(generic_associated_types)]
-    type SubscribeToPushNotificationsStream = DropReceiver<Result<SubscribePushNotificationResponce,Status>>;
+    type SubscribeToPushNotificationsStream =
+        DropReceiver<'static, Result<SubscribePushNotificationResponce, Status>>;
     async fn subscribe_to_push_notifications(
         &mut self,
         request: Request<SubscribePushNotificationRequest>,
-    ) -> Result<Response<Self::SubscribeToPushNotificationsStream>, Status>{
+    ) -> Result<Response<Self::SubscribeToPushNotificationsStream>, Status> 
+    {
         let user_id_from_request = request.get_ref().user_id.clone();
         println!("new subscriber, id: {}", &user_id_from_request);
         let (tx, rx) = mpsc::channel(1000);
-        
+
         {
-            let subscribed_peers = &mut(*(self.subscribed_peers.write().await));
-            subscribed_peers.entry(user_id_from_request.clone()).or_insert(tx.clone());
+            let subscribed_peers = &mut (*(self.subscribed_peers.write().await));
+            subscribed_peers
+                .entry(user_id_from_request.clone())
+                .or_insert(tx.clone());
         }
 
-        if self.pending_messages.lock().await.contains_key(&user_id_from_request) == true {
+        if self.pending_messages.lock().await.contains_key(&user_id_from_request) == true
+        {
             let mut messages_awaited = self.pending_messages.lock().await;
             let messages = messages_awaited.get_mut(&user_id_from_request);
             if let Some(msgs) = messages {
@@ -123,12 +130,12 @@ impl PushNotifications for HabPushNotification{
         };
         return Ok(Response::new(drop_receiver));
     }
-    
+
     async fn send_push_notification(
         &mut self,
         request: Request<PushNotificationRequest>,
-    ) -> Result<Response<PushNotificationResponce>, Status>{
-
+    ) -> Result<Response<PushNotificationResponce>, Status> 
+    {
         let from_user_id_from_request = request.get_ref().user_id.clone();
         let to_user_id_from_request = request.get_ref().to_user_id.clone();
         let message_from_request = request.get_ref().message.clone();
@@ -151,70 +158,76 @@ impl PushNotifications for HabPushNotification{
                     }
                 });
             } else {
-                if self.pending_messages.lock().await.contains_key(&to_user_id_from_request) == true {
+                if self.pending_messages.lock().await.contains_key(&to_user_id_from_request) == true
+                {
                     let mut messages_awaited = self.pending_messages.lock().await;
                     let messages = messages_awaited.get_mut(&to_user_id_from_request);
                     if let Some(msgs) = messages {
-                        let msg_from_user = MsgFromUser{
+                        let msg_from_user = MsgFromUser {
                             from_user_id: from_user_id_from_request.clone(),
                             msg: message_from_request,
                             from_user_name: from_user_name_from_request.clone()
                         };
-                        msgs.push_back(msg_from_user);// fixme: insertion order is not kept
+                        msgs.push_back(msg_from_user); // fixme: insertion order is not kept
                     }
                 } else {
-                    let mut messages:VecDeque<MsgFromUser> = VecDeque::new();
-                    let msg_from_user = MsgFromUser{
+                    let mut messages: VecDeque<MsgFromUser> = VecDeque::new();
+                    let msg_from_user = MsgFromUser {
                         from_user_id: from_user_id_from_request,
                         msg: message_from_request,
                         from_user_name: from_user_name_from_request.clone()
                     };
                     messages.push_back(msg_from_user);
-                    self.pending_messages.lock().await.insert(to_user_id_from_request, messages);
+                    self.pending_messages
+                        .lock()
+                        .await
+                        .insert(to_user_id_from_request, messages);
                 }
             }
         } else {
-            if self.pending_messages.lock().await.contains_key(&to_user_id_from_request) == true {
+            if self.pending_messages.lock().await.contains_key(&to_user_id_from_request) == true
+            {
                 let mut messages_awaited = self.pending_messages.lock().await;
                 let messages = messages_awaited.get_mut(&to_user_id_from_request);
                 if let Some(msgs) = messages {
-                    let msg_from_user = MsgFromUser{
+                    let msg_from_user = MsgFromUser {
                         from_user_id: from_user_id_from_request,
                         msg: message_from_request,
                         from_user_name: from_user_name_from_request.clone()
                     };
-                    msgs.push_back(msg_from_user);// fixme: insertion order is not kept
+                    msgs.push_back(msg_from_user); // fixme: insertion order is not kept
                 }
             } else {
-                let mut messages:VecDeque<MsgFromUser> = VecDeque::new();
-                let msg_from_user = MsgFromUser{
+                let mut messages: VecDeque<MsgFromUser> = VecDeque::new();
+                let msg_from_user = MsgFromUser {
                     from_user_id: from_user_id_from_request,
                     msg: message_from_request,
                     from_user_name: from_user_name_from_request.clone()
                 };
                 messages.push_back(msg_from_user);
-                self.pending_messages.lock().await.insert(to_user_id_from_request, messages);
+                self.pending_messages
+                    .lock()
+                    .await
+                    .insert(to_user_id_from_request, messages);
             }
         }
 
-        let push_notification_responce = PushNotificationResponce{
-            response_code: 1
-        };
+        let push_notification_responce = PushNotificationResponce { response_code: 1 };
         return Ok(Response::new(push_notification_responce));
     }
 
     async fn un_subscribe_push_notification(
         &mut self,
         request: Request<UnSubscribePushNotificationRequest>,
-    ) -> Result<Response<UnSubscribePushNotificationResponce>, Status>{
+    ) -> Result<Response<UnSubscribePushNotificationResponce>, Status>
+    {
         println!("unsubscribed");
         let user_id_from_request = request.get_ref().user_id.clone();
         {
-            let subscribed_peers = &mut(*(self.subscribed_peers.write().await));
+            let subscribed_peers = &mut (*(self.subscribed_peers.write().await));
             subscribed_peers.remove(&user_id_from_request);
         }
-        let response = UnSubscribePushNotificationResponce{
-        };
+        let response = UnSubscribePushNotificationResponce {};
         return Ok(Response::new(response));
     }
 }

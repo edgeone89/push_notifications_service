@@ -1,27 +1,27 @@
 [package]
 name = "push_notifications_service"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["edgeone <edgeone@ya.ru>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 
 [dependencies]
-tonic = { version = "0.5.0", features = ["tls"] }
-prost = "0.8"
+tonic = { version = "0.6.0", features = ["tls"] }
+prost = "0.9"
 
 
 #===== for tokio v1.0 =====================================
-tokio = { version = "1.8.1", features = ["rt-multi-thread", "time", "fs", "macros", "net", "sync"] }
+tokio = { version = "1.14.0", features = ["rt-multi-thread", "time", "fs", "macros", "net", "sync"] }
 #tokio-stream = "0.1.4"
 #==========================================================
 
-futures-core = "0.3.15"
-futures-executor = "0.3.15"
+futures-core = "0.3.17"
+futures-executor = "0.3.17"
 
 [build-dependencies]
-tonic-build = "0.5.0"
+tonic-build = "0.6.0"
 
 [profile.release]
 opt-level = 'z'
