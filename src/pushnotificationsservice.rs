@@ -1,50 +1,51 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SubscribePushNotificationRequest {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub user_id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SubscribePushNotificationResponce {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub from_user_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
+    #[prost(string, tag="2")]
     pub message: ::prost::alloc::string::String,
-    #[prost(string, tag = "3")]
+    #[prost(string, tag="3")]
     pub from_user_name: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PushNotificationRequest {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub user_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
+    #[prost(string, tag="2")]
     pub message: ::prost::alloc::string::String,
-    #[prost(string, tag = "3")]
+    #[prost(string, tag="3")]
     pub to_user_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "4")]
+    #[prost(string, tag="4")]
     pub from_user_name: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PushNotificationResponce {
-    #[prost(int32, tag = "1")]
+    #[prost(int32, tag="1")]
     pub response_code: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UnSubscribePushNotificationRequest {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub user_id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct UnSubscribePushNotificationResponce {}
-#[doc = r" Generated client implementations."]
+pub struct UnSubscribePushNotificationResponce {
+}
+/// Generated client implementations.
 pub mod push_notifications_client {
-    #![allow(unused_variables, dead_code, missing_docs)]
+    #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct PushNotificationsClient<T> {
         inner: tonic::client::Grpc<T>,
     }
     impl PushNotificationsClient<tonic::transport::Channel> {
-        #[doc = r" Attempt to create a new client by connecting to a given endpoint."]
+        /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
             D: std::convert::TryInto<tonic::transport::Endpoint>,
@@ -57,8 +58,8 @@ pub mod push_notifications_client {
     impl<T> PushNotificationsClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
-        T::ResponseBody: Body + Send + Sync + 'static,
         T::Error: Into<StdError>,
+        T::ResponseBody: Default + Body<Data = Bytes> + Send + 'static,
         <T::ResponseBody as Body>::Error: Into<StdError> + Send,
     {
         pub fn new(inner: T) -> Self {
@@ -70,27 +71,30 @@ pub mod push_notifications_client {
             interceptor: F,
         ) -> PushNotificationsClient<InterceptedService<T, F>>
         where
-            F: FnMut(tonic::Request<()>) -> Result<tonic::Request<()>, tonic::Status>,
-            T: Service<
+            F: tonic::service::Interceptor,
+            T: tonic::codegen::Service<
                 http::Request<tonic::body::BoxBody>,
                 Response = http::Response<
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as Service<http::Request<tonic::body::BoxBody>>>::Error:
-                Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<
+                http::Request<tonic::body::BoxBody>,
+            >>::Error: Into<StdError> + Send + Sync,
         {
             PushNotificationsClient::new(InterceptedService::new(inner, interceptor))
         }
-        #[doc = r" Compress requests with `gzip`."]
-        #[doc = r""]
-        #[doc = r" This requires the server to support it otherwise it might respond with an"]
-        #[doc = r" error."]
+        /// Compress requests with `gzip`.
+        ///
+        /// This requires the server to support it otherwise it might respond with an
+        /// error.
+        #[must_use]
         pub fn send_gzip(mut self) -> Self {
             self.inner = self.inner.send_gzip();
             self
         }
-        #[doc = r" Enable decompressing responses with `gzip`."]
+        /// Enable decompressing responses with `gzip`.
+        #[must_use]
         pub fn accept_gzip(mut self) -> Self {
             self.inner = self.inner.accept_gzip();
             self
@@ -99,33 +103,39 @@ pub mod push_notifications_client {
             &mut self,
             request: impl tonic::IntoRequest<super::SubscribePushNotificationRequest>,
         ) -> Result<
-            tonic::Response<tonic::codec::Streaming<super::SubscribePushNotificationResponce>>,
-            tonic::Status,
-        > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
+                tonic::Response<
+                    tonic::codec::Streaming<super::SubscribePushNotificationResponce>,
+                >,
+                tonic::Status,
+            > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/pushnotificationsservice.PushNotifications/SubscribeToPushNotifications",
             );
-            self.inner
-                .server_streaming(request.into_request(), path, codec)
-                .await
+            self.inner.server_streaming(request.into_request(), path, codec).await
         }
         pub async fn send_push_notification(
             &mut self,
             request: impl tonic::IntoRequest<super::PushNotificationRequest>,
         ) -> Result<tonic::Response<super::PushNotificationResponce>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/pushnotificationsservice.PushNotifications/SendPushNotification",
@@ -135,14 +145,19 @@ pub mod push_notifications_client {
         pub async fn un_subscribe_push_notification(
             &mut self,
             request: impl tonic::IntoRequest<super::UnSubscribePushNotificationRequest>,
-        ) -> Result<tonic::Response<super::UnSubscribePushNotificationResponce>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
+        ) -> Result<
+                tonic::Response<super::UnSubscribePushNotificationResponce>,
+                tonic::Status,
+            > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/pushnotificationsservice.PushNotifications/UnSubscribePushNotification",
@@ -151,24 +166,27 @@ pub mod push_notifications_client {
         }
     }
 }
-#[doc = r" Generated server implementations."]
+/// Generated server implementations.
 pub mod push_notifications_server {
-    #![allow(unused_variables, dead_code, missing_docs)]
+    #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tokio::sync::Mutex;
     use tonic::codegen::*;
-    #[doc = "Generated trait containing gRPC methods that should be implemented for use with PushNotificationsServer."]
+    ///Generated trait containing gRPC methods that should be implemented for use with PushNotificationsServer.
     #[async_trait]
     pub trait PushNotifications: Send + Sync + 'static {
-        #[doc = "Server streaming response type for the SubscribeToPushNotifications method."]
+        ///Server streaming response type for the SubscribeToPushNotifications method.
         type SubscribeToPushNotificationsStream: futures_core::Stream<
                 Item = Result<super::SubscribePushNotificationResponce, tonic::Status>,
-            > + Send
-            + Sync
+            >
+            + Send
             + 'static;
         async fn subscribe_to_push_notifications(
             &mut self,
             request: tonic::Request<super::SubscribePushNotificationRequest>,
-        ) -> Result<tonic::Response<Self::SubscribeToPushNotificationsStream>, tonic::Status>;
+        ) -> Result<
+                tonic::Response<Self::SubscribeToPushNotificationsStream>,
+                tonic::Status,
+            >;
         async fn send_push_notification(
             &mut self,
             request: tonic::Request<super::PushNotificationRequest>,
@@ -176,7 +194,10 @@ pub mod push_notifications_server {
         async fn un_subscribe_push_notification(
             &mut self,
             request: tonic::Request<super::UnSubscribePushNotificationRequest>,
-        ) -> Result<tonic::Response<super::UnSubscribePushNotificationResponce>, tonic::Status>;
+        ) -> Result<
+                tonic::Response<super::UnSubscribePushNotificationResponce>,
+                tonic::Status,
+            >;
     }
     #[derive(Debug)]
     pub struct PushNotificationsServer<T: PushNotifications> {
@@ -187,7 +208,9 @@ pub mod push_notifications_server {
     struct _Inner<T>(Arc<Mutex<T>>);
     impl<T: PushNotifications> PushNotificationsServer<T> {
         pub fn new(inner: T) -> Self {
-            let inner = Arc::new(Mutex::new(inner));
+            Self::from_arc(Arc::new(Mutex::new(inner)))
+        }
+        pub fn from_arc(inner: Arc<Mutex<T>>) -> Self {
             let inner = _Inner(inner);
             Self {
                 inner,
@@ -195,23 +218,29 @@ pub mod push_notifications_server {
                 send_compression_encodings: Default::default(),
             }
         }
-        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(
+            inner: T,
+            interceptor: F,
+        ) -> InterceptedService<Self, F>
         where
-            F: FnMut(tonic::Request<()>) -> Result<tonic::Request<()>, tonic::Status>,
+            F: tonic::service::Interceptor,
         {
             InterceptedService::new(Self::new(inner), interceptor)
         }
     }
-    impl<T, B> Service<http::Request<B>> for PushNotificationsServer<T>
+    impl<T, B> tonic::codegen::Service<http::Request<B>> for PushNotificationsServer<T>
     where
         T: PushNotifications,
-        B: Body + Send + Sync + 'static,
+        B: Body + Send + 'static,
         B::Error: Into<StdError> + Send + 'static,
     {
         type Response = http::Response<tonic::body::BoxBody>;
-        type Error = Never;
+        type Error = std::convert::Infallible;
         type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        fn poll_ready(
+            &mut self,
+            _cx: &mut Context<'_>,
+        ) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -219,19 +248,25 @@ pub mod push_notifications_server {
             match req.uri().path() {
                 "/pushnotificationsservice.PushNotifications/SubscribeToPushNotifications" => {
                     #[allow(non_camel_case_types)]
-                    struct SubscribeToPushNotificationsSvc<T: PushNotifications>(pub Arc<Mutex<T>>);
-                    impl<T: PushNotifications>
-                        tonic::server::ServerStreamingService<
-                            super::SubscribePushNotificationRequest,
-                        > for SubscribeToPushNotificationsSvc<T>
-                    {
+                    struct SubscribeToPushNotificationsSvc<T: PushNotifications>(
+                        pub Arc<Mutex<T>>,
+                    );
+                    impl<
+                        T: PushNotifications,
+                    > tonic::server::ServerStreamingService<
+                        super::SubscribePushNotificationRequest,
+                    > for SubscribeToPushNotificationsSvc<T> {
                         type Response = super::SubscribePushNotificationResponce;
                         type ResponseStream = T::SubscribeToPushNotificationsStream;
-                        type Future =
-                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::SubscribePushNotificationRequest>,
+                            request: tonic::Request<
+                                super::SubscribePushNotificationRequest,
+                            >,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
@@ -248,10 +283,11 @@ pub mod push_notifications_server {
                         let inner = inner.0;
                         let method = SubscribeToPushNotificationsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
-                            accept_compression_encodings,
-                            send_compression_encodings,
-                        );
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
@@ -260,19 +296,21 @@ pub mod push_notifications_server {
                 "/pushnotificationsservice.PushNotifications/SendPushNotification" => {
                     #[allow(non_camel_case_types)]
                     struct SendPushNotificationSvc<T: PushNotifications>(pub Arc<Mutex<T>>);
-                    impl<T: PushNotifications>
-                        tonic::server::UnaryService<super::PushNotificationRequest>
-                        for SendPushNotificationSvc<T>
-                    {
+                    impl<
+                        T: PushNotifications,
+                    > tonic::server::UnaryService<super::PushNotificationRequest>
+                    for SendPushNotificationSvc<T> {
                         type Response = super::PushNotificationResponce;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::PushNotificationRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
-                                //(*inner).send_push_notification(request).await
                                 let mut tmp_inner = inner.lock().await;
                                 tmp_inner.send_push_notification(request).await
                             };
@@ -286,10 +324,11 @@ pub mod push_notifications_server {
                         let inner = inner.0;
                         let method = SendPushNotificationSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
-                            accept_compression_encodings,
-                            send_compression_encodings,
-                        );
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
@@ -297,20 +336,27 @@ pub mod push_notifications_server {
                 }
                 "/pushnotificationsservice.PushNotifications/UnSubscribePushNotification" => {
                     #[allow(non_camel_case_types)]
-                    struct UnSubscribePushNotificationSvc<T: PushNotifications>(pub Arc<Mutex<T>>);
-                    impl<T: PushNotifications>
-                        tonic::server::UnaryService<super::UnSubscribePushNotificationRequest>
-                        for UnSubscribePushNotificationSvc<T>
-                    {
+                    struct UnSubscribePushNotificationSvc<T: PushNotifications>(
+                        pub Arc<Mutex<T>>,
+                    );
+                    impl<
+                        T: PushNotifications,
+                    > tonic::server::UnaryService<
+                        super::UnSubscribePushNotificationRequest,
+                    > for UnSubscribePushNotificationSvc<T> {
                         type Response = super::UnSubscribePushNotificationResponce;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::UnSubscribePushNotificationRequest>,
+                            request: tonic::Request<
+                                super::UnSubscribePushNotificationRequest,
+                            >,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
-                                //(*inner).un_subscribe_push_notification(request).await
                                 let mut tmp_inner = inner.lock().await;
                                 tmp_inner.un_subscribe_push_notification(request).await
                             };
@@ -324,23 +370,28 @@ pub mod push_notifications_server {
                         let inner = inner.0;
                         let method = UnSubscribePushNotificationSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
-                            accept_compression_encodings,
-                            send_compression_encodings,
-                        );
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
                 }
-                _ => Box::pin(async move {
-                    Ok(http::Response::builder()
-                        .status(200)
-                        .header("grpc-status", "12")
-                        .header("content-type", "application/grpc")
-                        .body(empty_body())
-                        .unwrap())
-                }),
+                _ => {
+                    Box::pin(async move {
+                        Ok(
+                            http::Response::builder()
+                                .status(200)
+                                .header("grpc-status", "12")
+                                .header("content-type", "application/grpc")
+                                .body(empty_body())
+                                .unwrap(),
+                        )
+                    })
+                }
             }
         }
     }
@@ -364,7 +415,8 @@ pub mod push_notifications_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: PushNotifications> tonic::transport::NamedService for PushNotificationsServer<T> {
+    impl<T: PushNotifications> tonic::transport::NamedService
+    for PushNotificationsServer<T> {
         const NAME: &'static str = "pushnotificationsservice.PushNotifications";
     }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "push_notifications_service"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["edgeone <edgeone@ya.ru>"]
 edition = "2021"
 
@@ -8,25 +8,25 @@ edition = "2021"
 
 
 [dependencies]
-tonic = { version = "0.6.0", features = ["tls"] }
-prost = "0.9"
+tonic = { version = "0.7.0", features = ["tls"] }
+prost = "0.10"
 
 
 #===== for tokio v1.0 =====================================
-tokio = { version = "1.14.0", features = ["rt-multi-thread", "time", "fs", "macros", "net", "sync"] }
+tokio = { version = "1.17.0", features = ["rt-multi-thread", "time", "fs", "macros", "net", "sync"] }
 #tokio-stream = "0.1.4"
 #==========================================================
 
-futures-core = "0.3.17"
-futures-executor = "0.3.17"
+futures-core = "0.3.21"
+futures-executor = "0.3.21"
 
 [build-dependencies]
-tonic-build = "0.6.0"
+tonic-build = "0.7.0"
 
 [profile.release]
 opt-level = 'z'
 lto = true # enable link time optimization
 
 [profile.dev]
-opt-level = 'z'
-lto = true # enable link time optimization
+opt-level = 0
+lto = false # enable link time optimization
